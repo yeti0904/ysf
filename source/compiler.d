@@ -58,15 +58,17 @@ enum CompilerFeatures {
 }
 
 class Compiler {
-	ubyte    features = 0xFF;
-	Lexer    lexer;
-	size_t   i;
-	bool     inFunction;
-	string   lastFunction;
-	string[] lines;
-	string[] functions;
-	size_t   statements;
-	size_t[] statementIDs;
+	ubyte          features = 0xFF;
+	Lexer          lexer;
+	size_t         i;
+	bool           inFunction;
+	string         lastFunction;
+	string[]       lines;
+	string[]       functions;
+	size_t         statements;
+	size_t[]       statementIDs;
+	ushort[string] variables;
+	ushort         variableAddress;
 
 	this() {
 		
@@ -79,8 +81,21 @@ class Compiler {
 		];
 	}
 
+	string[] CompilePushVariable(string name) {
+		return [
+			"add si, 2",
+			format("mov ax, %s", variables[name]),
+			"mov [si], ax"
+		];
+	}
+
 	string[] CompilePushString(string push) {
 		string[] ret;
+
+		ret ~= [
+			"add si, 2",
+			"mov word [si], 0"
+		];
 
 		foreach_reverse (ref ch ; push) {
 			ret ~= [
@@ -96,11 +111,11 @@ class Compiler {
 		string[] ret;
 
 		if (features & CompilerFeatures.FunctionBarriers) {
-			ret ~= format("jmp function_%s_end", name);
+			ret ~= format("jmp function_%s_end", name.CleanString());
 		}
 
 		ret ~= [
-			format("function_%s:", name)
+			format("function_%s:", name.CleanString())
 		];
 
 		return ret;
@@ -109,13 +124,13 @@ class Compiler {
 	string[] CompileFunctionEnd(string name) {
 		return [
 			"ret",
-			format("function_%s_end:", name),
+			format("function_%s_end:", name.CleanString()),
 		];
 	}
 
 	string[] CompileFunctionCall(string name) {
 		return [
-			format("call function_%s", name)
+			format("call function_%s", name.CleanString())
 		];
 	}
 
@@ -166,9 +181,10 @@ class Compiler {
 	}
 
 	void Compile() {
-		inFunction = false;
-		lines      = [];
-		functions  = [];
+		inFunction      = false;
+		lines           = [];
+		functions       = [];
+		variableAddress = 0x0FFF;
 
 		lines ~= [
 			"bits 16",
@@ -245,7 +261,21 @@ class Compiler {
 							lines ~= "ret";
 							break;
 						}
+						case "variable": {
+							Next();
+
+							assert(lexer.tokens[i].type == TokenType.Word);
+
+							variables[lexer.tokens[i].contents]  = variableAddress;
+							variableAddress                     += 2;
+							break;
+						}
 						default: {
+							if (lexer.tokens[i].contents in variables) {
+								lines ~= CompilePushVariable(lexer.tokens[i].contents);
+								break;
+							}
+						
 							if (!functions.canFind(lexer.tokens[i].contents)) {
 								ErrorUndefinedFunction(lexer.tokens[i]);
 								exit(1);

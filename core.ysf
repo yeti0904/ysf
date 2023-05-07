@@ -1,40 +1,82 @@
-function drop
+function drop ( a -- )
 	asm sub si, 2
 endf
 
-function dup
+function dup ( a -- a a )
 	asm mov ax, [si]
 	asm add si, 2
 	asm mov [si], ax
 endf
 
-function return
+function return ( -- )
 	asm ret
 endf
 
-function add
+function + ( a b -- a+b )
+	asm mov bx, [si]
+	asm sub si, 2
 	asm mov ax, [si]
-	drop
-	asm mov ax, [si]
-	drop
+	asm sub si, 2
 	asm add ax, bx
 	asm add si, 2
 	asm mov [si], ax
 endf
 
-function emit
+function - ( a b -- a-b )
+	asm mov bx, [si]
+	asm sub si, 2
+	asm mov ax, [si]
+	asm sub si, 2
+	asm sub ax, bx
+	asm add si, 2
+	asm mov [si], ax
+endf
+
+function * ( a b -- a*b )
+	asm mov bx, [si]
+	asm sub si, 2
+	asm mov ax, [si]
+	asm sub si, 2
+	asm mul bx
+	asm add si, 2
+	asm mov [si], ax
+endf
+
+function / ( a b -- a/b )
+	asm mov bx, [si]
+	asm sub si, 2
+	asm mov ax, [si]
+	asm sub si, 2
+	asm xor dx, dx
+	asm div bx
+	asm add si, 2
+	asm mov [si], ax
+endf
+
+function % ( a b -- a%b )
+	asm mov bx, [si]
+	asm sub si, 2
+	asm mov ax, [si]
+	asm sub si, 2
+	asm xor dx, dx
+	asm div bx
+	asm add si, 2
+	asm mov [si], dx
+endf
+
+function emit ( char -- )
 	asm mov ax, [si]
 	drop
 	asm mov ah, 0x0E
 	asm int 0x10
 endf
 
-function exit
+function exit ( -- )
 	asm mov ah, 0x4C
 	asm int 0x21
 endf
 
-function equals
+function equals ( a b -- c )
 	asm std
 	asm lodsw
 	asm cmp ax, [si]
@@ -44,7 +86,7 @@ function equals
 	asm cld
 endf
 
-function not
+function not ( a -- !a )
 	asm mov ax, [si]
 	asm not ax
 	asm cmp ax, -1
@@ -52,4 +94,23 @@ function not
 	asm mov ax, 0
 	asm rcl ax, 1
 	asm mov [si], ax
+endf
+
+function poke ( addr value -- )
+	asm mov ax, [si]
+	asm sub si, 2
+	asm mov bx, [si]
+	asm sub si, 2
+	asm mov [bx], ax
+endf
+
+function peek ( addr -- value )
+	asm mov bx, [si]
+	asm mov ax, [bx]
+	asm mov [si], ax
+endf
+
+function stack ( -- addr )
+	asm add si, 2
+	asm mov [si], sp
 endf

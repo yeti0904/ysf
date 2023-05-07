@@ -35,3 +35,11 @@ function sayHello ( -- )
 	"hello" putstr
 endf
 ```
+
+### Variables
+```
+variable myvar
+
+myvar 5 poke ( write 5 to myvar )
+myvar peek ( get variable's contents )
+```
