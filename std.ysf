@@ -3,5 +3,5 @@ include core.ysf
 function putstr
 	while
 		emit
-	dup 0 equals not endwhile
+	dup endwhile
 endf

@@ -5,6 +5,54 @@ import core.stdc.stdlib;
 import error;
 import lexer;
 
+string CleanString(string str) {
+	string ret;
+
+	string[char] replace = cast(string[char]) [
+		'!': "__bang__",
+		'£': "__pound__",
+		'$': "__dollar__",
+		'%': "__percent__",
+		'^': "__caret__",
+		'&': "__ampersand__",
+		'*': "__star__",
+		'(': "__lparen__",
+		')': "__rparen__",
+		'-': "__dash__",
+		'+': "__add__",
+		'=': "__equals__",
+		'[': "__lsquarebracket__",
+		']': "__rsquarebracket__",
+		'{': "__lcurlybracket__",
+		'}': "__rcurlybracket__",
+		':': "__colon__",
+		';': "__semicolon__",
+		'@': "__at__",
+		'#': "__hashtag__",
+		'~': "__tilde__",
+		'<': "__leftthing__",
+		'>': "__rightthing__",
+		',': "__comma__",
+		'.': "__dot__",
+		'/': "__forwardslash__",
+		'?': "__questionmark__",
+		'|': "__vline__",
+		'\\': "__backslash__",
+		'¬': "__thing__"
+	];
+
+	foreach (ref ch ; str) {
+		if (ch in replace) {
+			ret ~= replace[ch];
+		}
+		else {
+			ret ~= ch;
+		}
+	}
+
+	return ret;
+}
+
 enum CompilerFeatures {
 	FunctionBarriers = 0b00000001
 }
@@ -75,8 +123,8 @@ class Compiler {
 		return [
 			"mov ax, [si]",
 			"sub si, 2",
-			"cmp ax, 1",
-			format("jne statement_%d_end", statements)
+			"cmp ax, 0",
+			format("je statement_%d_end", statements)
 		];
 	}
 
@@ -100,8 +148,8 @@ class Compiler {
 		string[] ret = [
 			"mov ax, [si]",
 			"sub si, 2",
-			"cmp ax, 1",
-			format("je statement_%d", statementIDs[$ - 1])
+			"cmp ax, 0",
+			format("jne statement_%d", statementIDs[$ - 1])
 		];
 
 		statementIDs = statementIDs.remove(statementIDs.length - 1);
