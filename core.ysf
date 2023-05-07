@@ -1,0 +1,55 @@
+function drop
+	asm sub si, 2
+endf
+
+function dup
+	asm mov ax, [si]
+	asm add si, 2
+	asm mov [si], ax
+endf
+
+function return
+	asm ret
+endf
+
+function add
+	asm mov ax, [si]
+	drop
+	asm mov ax, [si]
+	drop
+	asm add ax, bx
+	asm add si, 2
+	asm mov [si], ax
+endf
+
+function emit
+	asm mov ax, [si]
+	drop
+	asm mov ah, 0x0E
+	asm int 0x10
+endf
+
+function exit
+	asm mov ah, 0x4C
+	asm int 0x21
+endf
+
+function equals
+	asm std
+	asm lodsw
+	asm cmp ax, [si]
+	asm sete al
+	asm cbw
+	asm mov [si], ax
+	asm cld
+endf
+
+function not
+	asm mov ax, [si]
+	asm not ax
+	asm cmp ax, -1
+	asm cmc
+	asm mov ax, 0
+	asm rcl ax, 1
+	asm mov [si], ax
+endf
