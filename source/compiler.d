@@ -53,22 +53,28 @@ string CleanString(string str) {
 	return ret;
 }
 
+struct Variable {
+	ushort addr;
+	size_t size;
+}
+
 enum CompilerFeatures {
 	FunctionBarriers = 0b00000001
 }
 
 class Compiler {
-	ubyte          features = 0xFF;
-	Lexer          lexer;
-	size_t         i;
-	bool           inFunction;
-	string         lastFunction;
-	string[]       lines;
-	string[]       functions;
-	size_t         statements;
-	size_t[]       statementIDs;
-	ushort[string] variables;
-	ushort         variableAddress;
+	ubyte            features = 0xFF;
+	Lexer            lexer;
+	size_t           i;
+	bool             inFunction;
+	string           lastFunction;
+	string[]         lines;
+	string[]         functions;
+	size_t           statements;
+	size_t[]         statementIDs;
+	Variable[string] variables;
+	ushort           variableAddress;
+	string[][]       scopes;
 
 	this() {
 		
@@ -84,7 +90,7 @@ class Compiler {
 	string[] CompilePushVariable(string name) {
 		return [
 			"add si, 2",
-			format("mov ax, %s", variables[name]),
+			format("mov ax, %s", variables[name].addr),
 			"mov [si], ax"
 		];
 	}
@@ -180,11 +186,28 @@ class Compiler {
 		}
 	}
 
+	void ClearScope() {
+		string[] thisScope = scopes[$ - 1]; // 190
+
+		foreach (ref variable ; thisScope) {
+			variableAddress -= variables[variable].size;
+			variables.remove(variable);
+		}
+
+		scopes = scopes.remove(scopes.length - 1);
+	}
+
+	void AddScope() {
+		scopes ~= [];
+	}
+
 	void Compile() {
 		inFunction      = false;
 		lines           = [];
 		functions       = [];
 		variableAddress = 0x0FFF;
+
+		bool nextLocal = false;
 
 		lines ~= [
 			"bits 16",
@@ -196,20 +219,28 @@ class Compiler {
 		for (i = 0; i < lexer.tokens.length; ++ i) {
 			switch (lexer.tokens[i].type) {
 				case TokenType.Integer: {
+					nextLocal = false;
+					
 					lines ~= CompilePushInt(parse!int(lexer.tokens[i].contents));
 					break;
 				}
 				case TokenType.String: {
+					nextLocal = false;
+					
 					lines ~= CompilePushString(lexer.tokens[i].contents);
 					break;
 				}
 				case TokenType.Asm: {
+					nextLocal = false;
+					
 					lines ~= lexer.tokens[i].contents;
 					break;
 				}
 				case TokenType.Word: {
 					switch (lexer.tokens[i].contents) {
 						case "function": {
+							nextLocal = false;
+							
 							assert(!inFunction);
 						
 							Next();
@@ -221,17 +252,25 @@ class Compiler {
 							inFunction    = true;
 							lastFunction  = lexer.tokens[i].contents;
 							functions    ~= lexer.tokens[i].contents;
+
+							//AddScope();
 							break;
 						}
 						case "endf": {
+							nextLocal = false;
+							
 							assert(inFunction);
 
 							lines ~= CompileFunctionEnd(lastFunction);
 
 							inFunction = false;
+
+							//ClearScope(); // 268
 							break;
 						}
 						case "if": {
+							nextLocal = false;
+							
 							++ statements;
 							statementIDs ~= statements;
 
@@ -239,12 +278,16 @@ class Compiler {
 							break;
 						}
 						case "endif": {
+							nextLocal = false;
+							
 							assert(statementIDs.length > 0);
 
 							lines ~= CompileIfEnd();
 							break;
 						}
 						case "while": {
+							nextLocal = false;
+							
 							++ statements;
 							statementIDs ~= statements;
 
@@ -252,13 +295,21 @@ class Compiler {
 							break;
 						}
 						case "endwhile": {
+							nextLocal = false;
+							
 							assert(statementIDs.length > 0);
 
 							lines ~= CompileWhileEnd();
 							break;
 						}
 						case "return": {
+							nextLocal = false;
+							
 							lines ~= "ret";
+							break;
+						}
+						case "local": {
+							nextLocal = true;
 							break;
 						}
 						case "variable": {
@@ -266,8 +317,34 @@ class Compiler {
 
 							assert(lexer.tokens[i].type == TokenType.Word);
 
-							variables[lexer.tokens[i].contents]  = variableAddress;
-							variableAddress                     += 2;
+							string variable = lexer.tokens[i].contents;
+
+							variables[variable]  = Variable(variableAddress, 2);
+							variableAddress += 2;
+
+							if (nextLocal) {
+								scopes[$ - 1] ~= variable;
+								nextLocal      = false;
+							}
+							break;
+						}
+						case "array": {
+							Next();
+							assert(lexer.tokens[i].type == TokenType.Integer);
+							ushort elements = lexer.tokens[i].contents.parse!ushort();
+
+							Next();
+							assert(lexer.tokens[i].type == TokenType.Word);
+							string variable = lexer.tokens[i].contents;
+
+							variables[variable] = Variable(
+								variableAddress, cast(ushort) (elements * 2)
+							);
+
+							if (nextLocal) {
+								scopes[$ - 1] ~= variable;
+								nextLocal      = false;
+							}
 							break;
 						}
 						default: {
@@ -288,6 +365,12 @@ class Compiler {
 					break;
 				}
 				default: assert(0);
+			}
+		}
+
+		foreach (ref line ; lines) {
+			if (line[$ - 1] != ':') {
+				line = "    " ~ line;
 			}
 		}
 	}

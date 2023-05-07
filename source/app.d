@@ -78,7 +78,21 @@ void main(string[] args) {
 
 	auto compiler = new Compiler();
 	compiler.lexer = lexer;
-	compiler.Compile();
+
+	try {
+		compiler.Compile();
+	}
+	catch (Throwable e) {
+		stderr.writefln("FATAL EXCEPTION");
+		stderr.writefln("%s", e);
+		stderr.writefln(
+			"At %s:%d:%d",
+			lexer.tokens[compiler.i].file,
+			lexer.tokens[compiler.i].line,
+			lexer.tokens[compiler.i].col
+		);
+		return;
+	}
 
 	if (!lexer.success) {
 		return;

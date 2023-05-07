@@ -8,10 +8,6 @@ function dup ( a -- a a )
 	asm mov [si], ax
 endf
 
-function return ( -- )
-	asm ret
-endf
-
 function + ( a b -- a+b )
 	asm mov bx, [si]
 	asm sub si, 2
