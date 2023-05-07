@@ -198,7 +198,7 @@ class Compiler {
 	}
 
 	void AddScope() {
-		scopes ~= [];
+		scopes ~= [[]];
 	}
 
 	void Compile() {
@@ -253,7 +253,7 @@ class Compiler {
 							lastFunction  = lexer.tokens[i].contents;
 							functions    ~= lexer.tokens[i].contents;
 
-							//AddScope();
+							AddScope();
 							break;
 						}
 						case "endf": {
@@ -265,7 +265,7 @@ class Compiler {
 
 							inFunction = false;
 
-							//ClearScope(); // 268
+							ClearScope(); // 268
 							break;
 						}
 						case "if": {
