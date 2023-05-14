@@ -1,8 +1,45 @@
 include core.ysf
 
-function putstr
+function puthex
+	local array 16 chars
+	chars '0' poke
+	chars 1 + '1' poke
+	chars 2 + '2' poke
+	chars 3 + '3' poke
+	chars 4 + '4' poke
+	chars 5 + '5' poke
+	chars 6 + '6' poke
+	chars 7 + '7' poke
+	chars 8 + '8' poke
+	chars 9 + '9' poke
+	chars 10 + 'A' poke
+	chars 11 + 'B' poke
+	chars 12 + 'C' poke
+	chars 13 + 'D' poke
+	chars 14 + 'E' poke
+	chars 15 + 'F' poke
+
+	dup
+	16 / chars + peek emit
+	16 % chars + peek emit
+endf
+
+function putsstr
 	while
 		emit
 	dup endwhile
 	drop
+endf
+
+function putmstr (broken)
+	local variable addr
+	local variable offset
+	addr swap poke
+
+	offset 0 poke
+
+	while
+		addr peek offset peek + peek emit
+		offset peek 2 + offset swap poke
+	addr peek offset peek + peek endwhile
 endf

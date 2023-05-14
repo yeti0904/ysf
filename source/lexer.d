@@ -7,6 +7,7 @@ import error;
 enum TokenType {
 	None,
 	Integer,
+	Char,
 	String,
 	Word,
 	Asm
@@ -64,6 +65,22 @@ class Lexer {
 							++ col;
 						}
 					}
+					break;
+				}
+				case '\'': {
+					++ i;
+					++ col;
+
+					assert(code[i] != '\'');
+
+					char ch = code[i];
+
+					++ i;
+					++ col;
+
+					assert(code[i] == '\'');
+
+					AddToken(TokenType.Char, [ch]);
 					break;
 				}
 				case '\n':

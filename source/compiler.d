@@ -87,6 +87,13 @@ class Compiler {
 		];
 	}
 
+	string[] CompilePushChar(char push) {
+		return [
+			"add si, 2",
+			format("mov word [si], %d", push)
+		];
+	}
+
 	string[] CompilePushVariable(string name) {
 		return [
 			"add si, 2",
@@ -222,6 +229,12 @@ class Compiler {
 					nextLocal = false;
 					
 					lines ~= CompilePushInt(parse!int(lexer.tokens[i].contents));
+					break;
+				}
+				case TokenType.Char: {
+					nextLocal = false;
+
+					lines ~= CompilePushChar(lexer.tokens[i].contents[0]);
 					break;
 				}
 				case TokenType.String: {

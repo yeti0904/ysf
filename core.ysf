@@ -110,3 +110,10 @@ function stack ( -- addr )
 	asm add si, 2
 	asm mov [si], sp
 endf
+
+function swap ( a b -- b a )
+	asm mov ax, [si]
+	asm mov bx, [si - 2]
+	asm mov [si], bx
+	asm mov [si - 2], ax
+endf
